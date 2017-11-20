@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.2" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="CTF,REVERSE," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.2" />
+
+
+
+
+
+
+<meta name="description" content="此题代码量特别巨大，有八百多Kb，手撕的话比较困难，一种思路是用pintools侧信道工具。 0x01程序分析程序在函数sub_400550中存在ptrace反调试，该函数声明在.init_array中： 12345678910111213141516__int64 sub_400550()&amp;#123;  __int64 result; // rax@2  __int64 v1; // [sp+8">
+<meta name="keywords" content="CTF,REVERSE">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hxpCTF2017 zwiebel">
+<meta property="og:url" content="http://yoursite.com/2017/11/20/hxpCTF2017-zwiebel/index.html">
+<meta property="og:site_name" content="aftern00n blog">
+<meta property="og:description" content="此题代码量特别巨大，有八百多Kb，手撕的话比较困难，一种思路是用pintools侧信道工具。 0x01程序分析程序在函数sub_400550中存在ptrace反调试，该函数声明在.init_array中： 12345678910111213141516__int64 sub_400550()&amp;#123;  __int64 result; // rax@2  __int64 v1; // [sp+8">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/img/hxpCTF2017-zwiebel/1.png">
+<meta property="og:updated_time" content="2017-11-20T08:53:13.425Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="hxpCTF2017 zwiebel">
+<meta name="twitter:description" content="此题代码量特别巨大，有八百多Kb，手撕的话比较困难，一种思路是用pintools侧信道工具。 0x01程序分析程序在函数sub_400550中存在ptrace反调试，该函数声明在.init_array中： 12345678910111213141516__int64 sub_400550()&amp;#123;  __int64 result; // rax@2  __int64 v1; // [sp+8">
+<meta name="twitter:image" content="http://yoursite.com/img/hxpCTF2017-zwiebel/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/11/20/hxpCTF2017-zwiebel/"/>
+
+
+
+
+
+  <title>hxpCTF2017 zwiebel | aftern00n blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">aftern00n blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/11/20/hxpCTF2017-zwiebel/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="aftern00n">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="aftern00n blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">hxpCTF2017 zwiebel</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-11-20T15:48:45+08:00">
+                2017-11-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CTF/" itemprop="url" rel="index">
+                    <span itemprop="name">CTF</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>此题代码量特别巨大，有八百多Kb，手撕的话比较困难，一种思路是用pintools侧信道工具。</p>
+<h2 id="0x01程序分析"><a href="#0x01程序分析" class="headerlink" title="0x01程序分析"></a>0x01程序分析</h2><p>程序在函数sub_400550中存在ptrace反调试，该函数声明在.init_array中：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">__<span class="function">int64 <span class="title">sub_400550</span><span class="params">()</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">  __int64 result; <span class="comment">// rax@2</span></div><div class="line">  __int64 v1; <span class="comment">// [sp+8h] [bp-10h]@1</span></div><div class="line"></div><div class="line">  v1 = *MK_FP(__FS__, <span class="number">40L</span>L);</div><div class="line">  <span class="keyword">if</span> ( sub_433F60(<span class="number">0</span>, <span class="number">0L</span>L, <span class="number">0L</span>L, <span class="number">0L</span>L) )</div><div class="line">  &#123;</div><div class="line">    sub_4084B0(<span class="string">":("</span>);</div><div class="line">    sub_432BA0(<span class="number">0xFFFFFFFF</span>LL);</div><div class="line">  &#125;</div><div class="line">  result = <span class="number">0L</span>L;</div><div class="line">  <span class="keyword">if</span> ( *MK_FP(__FS__, <span class="number">40L</span>L) != v1 )</div><div class="line">    sub_4355A0(<span class="number">0L</span>L, <span class="number">0L</span>L, *MK_FP(__FS__, <span class="number">40L</span>L) ^ v1);</div><div class="line">  <span class="keyword">return</span> result;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>check代码部分其实是在.data段中，地址为0x6B2020。程序会mapp一个大小为0x2890B的可读可写可执行的内存空间，将0x6B2020处的数据copy过去。通过0x4006A3地址处的call rcx跳转过去执行check逻辑：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">.text:00000000004006A3                 call    rcx</div></pre></td></tr></table></figure>
+<p>我们可以发现，check代码在执行过程中，会依次判断输入某一比特的值是否为1或0，并且解密后面的执行代码，rax即输入字符的起始地址。</p>
+<p><img src="/img/hxpCTF2017-zwiebel/1.png" alt="hxp ctf"></p>
+<p>这里我们就可以用一种很巧妙地思路来解这道题，由于程序对输入是单比特独立验证的，所以当输入中某一比特符合正确解时，程序执行的指令数就会增加，因此我们可以利用pintools的指令计数原理对输入字符串进行爆破。</p>
+<p>##0x02侧信道攻击</p>
+<p>假设输入为30字符，所以要爆破$30<em>8=240$位，由于我们不知道程序每次验证的第几个比特，因此每轮都需要尝试$30</em>8=240$次，因此总的爆破次数是240的平方。</p>
+<p>附上爆破脚本：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</div><div class="line"></div><div class="line">payload = list(<span class="string">"\xff"</span>*<span class="number">30</span>)</div><div class="line"></div><div class="line">p = process([<span class="string">"/home/tea/pin/pin"</span>, <span class="string">"-t"</span>, <span class="string">"/home/tea/ctf/hxp/inscount0.so"</span>, <span class="string">"--"</span>, <span class="string">"/home/tea/ctf/hxp/zwieb"</span>])</div><div class="line">p.recvuntil(<span class="string">"Input key: "</span>)</div><div class="line">p.sendline(<span class="string">""</span>.join(payload))</div><div class="line">data = p.recvline()</div><div class="line">count = int(data.split(<span class="string">" "</span>)[<span class="number">1</span>],<span class="number">10</span>)</div><div class="line"><span class="keyword">print</span> <span class="string">"Count: %d"</span> % count</div><div class="line">p.close()</div><div class="line"></div><div class="line">path = []</div><div class="line">last = count</div><div class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">240</span>):</div><div class="line">    tmp = payload[:]</div><div class="line">    <span class="keyword">for</span> j <span class="keyword">in</span> range(<span class="number">240</span>):</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            path.index(j)</div><div class="line">            <span class="keyword">continue</span></div><div class="line">        <span class="keyword">except</span>:</div><div class="line">            origin = tmp[j/<span class="number">8</span>]</div><div class="line">            modify = ord(origin) ^ (<span class="number">1</span>&lt;&lt;(j%<span class="number">8</span>))</div><div class="line">            tmp[j/<span class="number">8</span>] = chr(modify)</div><div class="line">            p = process([<span class="string">"/home/tea/pin/pin"</span>, <span class="string">"-t"</span>, <span class="string">"/home/tea/ctf/hxp/inscount0.so"</span>, <span class="string">"--"</span>, <span class="string">"/home/tea/ctf/hxp/zwieb"</span>])</div><div class="line">            p.recvuntil(<span class="string">"Input key: "</span>)</div><div class="line">            p.sendline(<span class="string">""</span>.join(tmp))</div><div class="line">            data = p.recvline()</div><div class="line">            count = int(data.split(<span class="string">" "</span>)[<span class="number">1</span>],<span class="number">10</span>)</div><div class="line">            <span class="keyword">print</span> <span class="string">"%d %d Count: %d"</span> % (i,j,count)</div><div class="line">            p.close()</div><div class="line">            <span class="keyword">if</span> (count - last)&gt;<span class="number">1000</span>:</div><div class="line">                last = count</div><div class="line">                payload = tmp[:]</div><div class="line">                path.append(j)</div><div class="line">                <span class="keyword">print</span> <span class="string">""</span>.join(payload).encode(<span class="string">"hex"</span>)</div><div class="line">                <span class="keyword">break</span></div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                tmp = payload[:]</div><div class="line"></div><div class="line"><span class="keyword">print</span> payload</div></pre></td></tr></table></figure>
+<p>爆破结果：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">[+] Starting local process &apos;/home/tea/pin/pin&apos;: pid 97344</div><div class="line">73 96 Count: 98511104</div><div class="line">[*] Stopped process &apos;/home/tea/pin/pin&apos; (pid 97344)</div><div class="line">6978707b315f356d336c6c5f6c347a796e7335357dffffffffffffffffff</div><div class="line">[+] Starting local process &apos;/home/tea/pin/pin&apos;: pid 97348</div><div class="line">74 0 Count: 119453879</div><div class="line">[*] Stopped process &apos;/home/tea/pin/pin&apos; (pid 97348)</div><div class="line">6878707b315f356d336c6c5f6c347a796e7335357dffffffffffffffffff</div><div class="line">[+] Starting local process &apos;/home/tea/pin/pin&apos;: pid 97352</div><div class="line">75 3 Count: 9672417</div><div class="line">[*] Stopped process &apos;/home/tea/pin/pin&apos; (pid 97352)</div><div class="line">[+] Starting local process &apos;/home/tea/pin/pin&apos;: pid 97356</div><div class="line">75 5 Count: 43356292</div><div class="line">[*] Stopped process &apos;/home/tea/pin/pin&apos; (pid 97356)</div><div class="line">[+] Starting local process &apos;/home/tea/pin/pin&apos;: pid 97360</div><div class="line">75 6 Count: 25769168</div><div class="line">[*] Stopped process &apos;/home/tea/pin/pin&apos; (pid 97360)</div><div class="line">[+] Starting local process &apos;/home/tea/pin/pin&apos;: pid 97364</div></pre></td></tr></table></figure>
+<p>see the flag：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">print</span> <span class="string">"6878707b315f356d336c6c5f6c347a796e7335357dffffffffffffffffff"</span>.decode(<span class="string">"hex"</span>)</div><div class="line"><span class="comment">#hxp&#123;1_5m3ll_l4zyns55&#125;</span></div></pre></td></tr></table></figure>
+<p>inscount0.so是pintools编译产生的so库文件，Pin官方手册上的第一个例子就是，我这里稍微改了一下输出的格式，直接输出到屏幕而不是写文件，代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/*BEGIN_LEGAL </span></div><div class="line"><span class="comment">Intel Open Source License </span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">Copyright (c) 2002-2017 Intel Corporation. All rights reserved.</span></div><div class="line"><span class="comment"> </span></div><div class="line"><span class="comment">Redistribution and use in source and binary forms, with or without</span></div><div class="line"><span class="comment">modification, are permitted provided that the following conditions are</span></div><div class="line"><span class="comment">met:</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">Redistributions of source code must retain the above copyright notice,</span></div><div class="line"><span class="comment">this list of conditions and the following disclaimer.  Redistributions</span></div><div class="line"><span class="comment">in binary form must reproduce the above copyright notice, this list of</span></div><div class="line"><span class="comment">conditions and the following disclaimer in the documentation and/or</span></div><div class="line"><span class="comment">other materials provided with the distribution.  Neither the name of</span></div><div class="line"><span class="comment">the Intel Corporation nor the names of its contributors may be used to</span></div><div class="line"><span class="comment">endorse or promote products derived from this software without</span></div><div class="line"><span class="comment">specific prior written permission.</span></div><div class="line"><span class="comment"> </span></div><div class="line"><span class="comment">THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS</span></div><div class="line"><span class="comment">``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT</span></div><div class="line"><span class="comment">LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR</span></div><div class="line"><span class="comment">A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE INTEL OR</span></div><div class="line"><span class="comment">ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,</span></div><div class="line"><span class="comment">SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT</span></div><div class="line"><span class="comment">LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,</span></div><div class="line"><span class="comment">DATA, O:R PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY</span></div><div class="line"><span class="comment">THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT</span></div><div class="line"><span class="comment">(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE</span></div><div class="line"><span class="comment">OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span></div><div class="line"><span class="comment">END_LEGAL */</span></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fstream&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"pin.H"</span></span></div><div class="line"></div><div class="line">ofstream OutFile;</div><div class="line"></div><div class="line"><span class="comment">// The running count of instructions is kept here</span></div><div class="line"><span class="comment">// make it static to help the compiler optimize docount</span></div><div class="line"><span class="keyword">static</span> UINT64 icount = <span class="number">0</span>;</div><div class="line"><span class="built_in">std</span>::ostream * out = &amp;<span class="built_in">cerr</span>;</div><div class="line"></div><div class="line"><span class="comment">// This function is called before every instruction is executed</span></div><div class="line"><span class="function">VOID <span class="title">docount</span><span class="params">()</span> </span>&#123; icount++; &#125;</div><div class="line">    </div><div class="line"><span class="comment">// Pin calls this function every time a new instruction is encountered</span></div><div class="line"><span class="function">VOID <span class="title">Instruction</span><span class="params">(INS ins, VOID *v)</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">    <span class="comment">// Insert a call to docount before every instruction, no arguments are passed</span></div><div class="line">    INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)docount, IARG_END);</div><div class="line">&#125;</div><div class="line"></div><div class="line">KNOB&lt;<span class="built_in">string</span>&gt; KnobOutputFile(KNOB_MODE_WRITEONCE, <span class="string">"pintool"</span>,</div><div class="line">    <span class="string">"o"</span>, <span class="string">"inscount.out"</span>, <span class="string">"specify output file name"</span>);</div><div class="line"></div><div class="line"><span class="function">INT32 <span class="title">Usage</span><span class="params">()</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">    <span class="built_in">cerr</span> &lt;&lt; <span class="string">"This tool counts the number of dynamic instructions executed"</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">    <span class="built_in">cerr</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; KNOB_BASE::StringKnobSummary() &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// This function is called when the application exits</span></div><div class="line"><span class="function">VOID <span class="title">Fini</span><span class="params">(INT32 code, VOID *v)</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">    <span class="built_in">cerr</span> &lt;&lt;<span class="string">"Count "</span>&lt;&lt; icount&lt;&lt; <span class="built_in">endl</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> * argv[])</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">    <span class="comment">// Initialize pin</span></div><div class="line">    <span class="keyword">if</span> (PIN_Init(argc, argv)) <span class="keyword">return</span> Usage();</div><div class="line">    <span class="comment">//OutFile.open(KnobOutputFile.Value().c_str());</span></div><div class="line"></div><div class="line">    <span class="comment">// Register Instruction to be called to instrument instructions</span></div><div class="line">    INS_AddInstrumentFunction(Instruction, <span class="number">0</span>);</div><div class="line"></div><div class="line">    <span class="comment">// Register Fini to be called when the application exits</span></div><div class="line">    PIN_AddFiniFunction(Fini, <span class="number">0</span>);</div><div class="line">    </div><div class="line">    <span class="comment">// Start the program, never returns</span></div><div class="line">    PIN_StartProgram();</div><div class="line">    </div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CTF/" rel="tag"># CTF</a>
+          
+            <a href="/tags/REVERSE/" rel="tag"># REVERSE</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/09/25/whctf-Loopcrypto/" rel="next" title="whctf Loopcrypto">
+                <i class="fa fa-chevron-left"></i> whctf Loopcrypto
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/uploads/avatar.jpg"
+               alt="aftern00n" />
+          <p class="site-author-name" itemprop="name">aftern00n</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives/">
+                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0x01程序分析"><span class="nav-number">1.</span> <span class="nav-text">0x01程序分析</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">aftern00n</span>
+
+  
+</div>
+
+
+  <div class="powered-by">
+    由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+  </div>
+
+  <span class="post-meta-divider">|</span>
+
+  <div class="theme-info">
+    主题 &mdash;
+    <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+      NexT.Pisces
+    </a>
+  </div>
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.2"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.2"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.2"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.2"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.2"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.2"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
