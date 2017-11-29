@@ -106,7 +106,7 @@
 <meta property="og:image" content="http://yoursite.com/img/learning%20notes%20of%20Heap%20Spray/0x02-2.png">
 <meta property="og:image" content="http://yoursite.com/img/learning%20notes%20of%20Heap%20Spray/0x02-3.png">
 <meta property="og:image" content="http://yoursite.com/img/learning%20notes%20of%20Heap%20Spray/0x02-4.png">
-<meta property="og:updated_time" content="2017-11-29T12:17:50.101Z">
+<meta property="og:updated_time" content="2017-11-29T12:20:40.228Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="learning notes of Heap Spray">
 <meta name="twitter:description" content="堆喷射学习笔记0x01堆基础知识参考资料：WINDBG的堆调试–了解HEAP组织Windows堆的数据结构与管理策略1234567891011121314151617#include &quot;windows.h&quot;int main()&amp;#123;    HLOCAL h1, h2;    HANDLE hp;        hp = HeapCreate(0, 0x1000, 0x100000);">
@@ -362,9 +362,71 @@
 
       
         <h1 id="堆喷射学习笔记"><a href="#堆喷射学习笔记" class="headerlink" title="堆喷射学习笔记"></a>堆喷射学习笔记</h1><h2 id="0x01堆基础知识"><a href="#0x01堆基础知识" class="headerlink" title="0x01堆基础知识"></a>0x01堆基础知识</h2><p>参考资料：<br><a href="http://www.cppblog.com/ay19880703/archive/2011/10/30/159364.html" target="_blank" rel="external">WINDBG的堆调试–了解HEAP组织</a><br><a href="http://www.doc88.com/p-9819325277293.html" target="_blank" rel="external">Windows堆的数据结构与管理策略</a><br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"windows.h"</span></span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">    HLOCAL h1, h2;</div><div class="line">    HANDLE hp;</div><div class="line">    </div><div class="line">    hp = HeapCreate(<span class="number">0</span>, <span class="number">0x1000</span>, <span class="number">0x100000</span>);</div><div class="line">    h1 = HeapAlloc(hp, HEAP_ZERO_MEMORY, <span class="number">0x120</span>*<span class="number">8</span><span class="number">-8</span>);</div><div class="line">    h2 = HeapAlloc(hp, HEAP_ZERO_MEMORY, <span class="number">0x100</span>*<span class="number">8</span><span class="number">-8</span>);</div><div class="line"></div><div class="line"></div><div class="line">    HeapFree(hp, <span class="number">0</span> , h1 ) ;</div><div class="line">    HeapFree(hp, <span class="number">0</span> , h2 ) ;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span> ;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>调用HeapCreate创建了一个私有堆，返回的堆句柄就是堆的基地址。<br>私有堆的结构如下表所示：<br>|    私有堆结构     |<br>| :———-: |<br>|     HEAP     |<br>| HEAP SEGMENT |<br>|  HEAP BLOCK  |</p>
-<p>堆的开始部分是Heap结构，其次是堆段（Heap Segment），然后是不同大小的堆块。堆块的结构我们比较熟知的，8字节的块首（HEAP_ENTRY）+数据区。<br>|       堆快结构        |<br>| :—————: |<br>|    HEAP_ENTRY     |<br>| 我们new或malloc分配的空间 |<br>|       填充空间        |</p>
-<p>我们new或者malloc返回的地址减去8字节即指向块首，第三部分的填充空间是为了保证堆块大小8字节对齐。以上面程序为例，介绍一下windbg查看这些结构的命令。<br>| 命令                               | 说明               |<br>| ——————————– | —————- |<br>| dt _HEAP address                 | 查看_HEAP结构        |<br>| dt _HEAP_SEGMENT segment_address | 查看HEAP_SEGMENT结构 |<br>| dt _HEAP_ENTRY address           | 查看_HEAP_ENTRY结构  |<br>| dt _LIST_ENTRY address           | 查看_LIST_ENTRY结构  |</p>
+<p>调用HeapCreate创建了一个私有堆，返回的堆句柄就是堆的基地址。<br>私有堆的结构如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">私有堆结构</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">HEAP</td>
+</tr>
+<tr>
+<td style="text-align:center">HEAP SEGMENT</td>
+</tr>
+<tr>
+<td style="text-align:center">HEAP BLOCK</td>
+</tr>
+</tbody>
+</table>
+<p>堆的开始部分是Heap结构，其次是堆段（Heap Segment），然后是不同大小的堆块。堆块的结构我们比较熟知的，8字节的块首（HEAP_ENTRY）+数据区。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">堆快结构</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">HEAP_ENTRY</td>
+</tr>
+<tr>
+<td style="text-align:center">我们new或malloc分配的空间</td>
+</tr>
+<tr>
+<td style="text-align:center">填充空间</td>
+</tr>
+</tbody>
+</table>
+<p>我们new或者malloc返回的地址减去8字节即指向块首，第三部分的填充空间是为了保证堆块大小8字节对齐。以上面程序为例，介绍一下windbg查看这些结构的命令。</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dt _HEAP address</td>
+<td>查看_HEAP结构</td>
+</tr>
+<tr>
+<td>dt _HEAP_SEGMENT segment_address</td>
+<td>查看HEAP_SEGMENT结构</td>
+</tr>
+<tr>
+<td>dt _HEAP_ENTRY address</td>
+<td>查看_HEAP_ENTRY结构</td>
+</tr>
+<tr>
+<td>dt _LIST_ENTRY address</td>
+<td>查看_LIST_ENTRY结构</td>
+</tr>
+</tbody>
+</table>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">0:000&gt; dt _heap 430000</div><div class="line">ntdll!_HEAP</div><div class="line">   +0x000 Entry            : _HEAP_ENTRY</div><div class="line">   +0x008 Signature        : 0xeeffeeff</div><div class="line">   +0x00c Flags            : 0x50001060</div><div class="line">   +0x010 ForceFlags       : 0x40000060</div><div class="line">   +0x014 VirtualMemoryThreshold : 0xfe00</div><div class="line">   +0x018 SegmentReserve   : 0x100000</div><div class="line">   +0x01c SegmentCommit    : 0x2000</div><div class="line">   +0x020 DeCommitFreeBlockThreshold : 0x200</div><div class="line">   +0x024 DeCommitTotalFreeThreshold : 0x2000</div><div class="line">   +0x028 TotalFreeSize    : 0x10c</div><div class="line">   +0x02c MaximumAllocationSize : 0x7ffdefff</div><div class="line">   +0x030 ProcessHeapsListIndex : 5</div><div class="line">   +0x032 HeaderValidateLength : 0x608</div><div class="line">   +0x034 HeaderValidateCopy : (null) </div><div class="line">   +0x038 NextAvailableTagIndex : 0</div><div class="line">   +0x03a MaximumTagIndex  : 0</div><div class="line">   +0x03c TagEntries       : (null) </div><div class="line">   +0x040 UCRSegments      : (null) </div><div class="line">   +0x044 UnusedUnCommittedRanges : 0x00430598 _HEAP_UNCOMMMTTED_RANGE</div><div class="line">   +0x048 AlignRound       : 0x17</div><div class="line">   +0x04c AlignMask        : 0xfffffff8</div><div class="line">   +0x050 VirtualAllocdBlocks : _LIST_ENTRY [ 0x430050 - 0x430050 ]</div><div class="line">   +0x058 Segments         : [64] 0x00430640 _HEAP_SEGMENT</div><div class="line">   +0x158 u                : __unnamed</div><div class="line">   +0x168 u2               : __unnamed</div><div class="line">   +0x16a AllocatorBackTraceIndex : 0</div><div class="line">   +0x16c NonDedicatedListLength : 1</div><div class="line">   +0x170 LargeBlocksIndex : (null) </div><div class="line">   +0x174 PseudoTagEntries : (null) </div><div class="line">   +0x178 FreeLists        : [128] _LIST_ENTRY [ 0x4317a8 - 0x4317a8 ]</div><div class="line">   +0x578 LockVariable     : 0x00430608 _HEAP_LOCK</div><div class="line">   +0x57c CommitRoutine    : (null) </div><div class="line">   +0x580 FrontEndHeap     : (null) </div><div class="line">   +0x584 FrontHeapLockCount : 0</div><div class="line">   +0x586 FrontEndHeapType : 0 &apos;&apos;</div><div class="line">   +0x587 LastSegmentIndex : 0 &apos;&apos;</div></pre></td></tr></table></figure>
 <p>重点关注偏移0x58和0x178两处，0x58处存储了堆段指针数组，可以看到一个堆中最多存储64个堆段。 0x178处的Free List则包括了所有空闲的Heap Block。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">0:000&gt; dt _heap_segment 430640</div><div class="line">ntdll!_HEAP_SEGMENT</div><div class="line">   +0x000 Entry            : _HEAP_ENTRY</div><div class="line">   +0x008 Signature        : 0xffeeffee</div><div class="line">   +0x00c Flags            : 0</div><div class="line">   +0x010 Heap             : 0x00430000 _HEAP</div><div class="line">   +0x014 LargestUnCommittedRange : 0xfe000</div><div class="line">   +0x018 BaseAddress      : 0x00430000 Void</div><div class="line">   +0x01c NumberOfPages    : 0x100</div><div class="line">   +0x020 FirstEntry       : 0x00430680 _HEAP_ENTRY</div><div class="line">   +0x024 LastValidEntry   : 0x00530000 _HEAP_ENTRY</div><div class="line">   +0x028 NumberOfUnCommittedPages : 0xfe</div><div class="line">   +0x02c NumberOfUnCommittedRanges : 1</div><div class="line">   +0x030 UnCommittedRanges : 0x00430588 _HEAP_UNCOMMMTTED_RANGE</div><div class="line">   +0x034 AllocatorBackTraceIndex : 0</div><div class="line">   +0x036 Reserved         : 0</div><div class="line">   +0x038 LastEntryInSegment : 0x004317a0 _HEAP_ENTRY</div></pre></td></tr></table></figure></p>
 <p>可以看到偏移0x20和0x38处，分别指向了堆段中的第一个和最后一个堆块。通过找到第一个堆块地址后，根据堆块的Size域，可以找到堆块二，即堆块一的地址+堆块一的字节数=堆块二的地址，重复这个过程，即可遍历堆段中的所有堆块。通过!heap -a address结果中的Granularity字段可以获取粒度值。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">0:000&gt; dt _heap_entry</div><div class="line">ntdll!_HEAP_ENTRY</div><div class="line">   +0x000 Size             : Uint2B //堆块的大小（以堆粒度为单位，含块首）</div><div class="line">   +0x002 PreviousSize     : Uint2B //前一堆块的大小（以堆粒度为单位，含块首）</div><div class="line">   +0x000 SubSegmentCode   : Ptr32 Void</div><div class="line">   +0x004 SmallTagIndex    : UChar</div><div class="line">   +0x005 Flags            : UChar //表示堆块的状态</div><div class="line">   +0x006 UnusedBytes      : UChar //堆块中未被用户使用的字节数（含块首）</div><div class="line">   +0x007 SegmentIndex     : UChar //堆块所在堆段的索引</div></pre></td></tr></table></figure></p>
@@ -378,8 +440,46 @@
 <p>我们可以注意到，_HEAP和_HEAP_SEGMENT结构开始的8字节都是_HEAP_ENTRY结构：</p>
 <ul>
 <li>_HEAP结构本身是一个堆块，且它的下一个堆块是_HEAP_SEGMENT结构。</li>
-<li>_HEAP_SEGMENT结构本身也是一个堆块，并且_HEAP_SEGMENT结构中指出的堆段中的第一个堆块其实就是_HEAP_SEGMENT结构的下一个堆块。<br>我整理的windbg中关于堆的常用命令：<br>| 命令                     | 说明                        |<br>| ———————- | ————————- |<br>| !heap -h               | 列出当前进程的所有堆                |<br>| !heap -v address       | 观察堆的分配粒度和解除提交阈值           |<br>| !heap -a address       | 获取更多详细信息                  |<br>| !heap -sta             | 显示进程堆信息                   |<br>| !heap -stat -h address | 查看堆分配的统计数，不加address查看所有堆的 |<br>| !heap -p -a address    | 获取address所属的堆             |<br>| !heap -flt s 0x8010    | 列出所有指定大小的分配块              |</li>
+<li>_HEAP_SEGMENT结构本身也是一个堆块，并且_HEAP_SEGMENT结构中指出的堆段中的第一个堆块其实就是_HEAP_SEGMENT结构的下一个堆块。<br>我整理的windbg中关于堆的常用命令：</li>
 </ul>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>!heap -h</td>
+<td>列出当前进程的所有堆</td>
+</tr>
+<tr>
+<td>!heap -v address</td>
+<td>观察堆的分配粒度和解除提交阈值</td>
+</tr>
+<tr>
+<td>!heap -a address</td>
+<td>获取更多详细信息</td>
+</tr>
+<tr>
+<td>!heap -sta</td>
+<td>显示进程堆信息</td>
+</tr>
+<tr>
+<td>!heap -stat -h address</td>
+<td>查看堆分配的统计数，不加address查看所有堆的</td>
+</tr>
+<tr>
+<td>!heap -p -a address</td>
+<td>获取address所属的堆</td>
+</tr>
+<tr>
+<td>!heap -flt s 0x8010</td>
+<td>列出所有指定大小的分配块</td>
+</tr>
+</tbody>
+</table>
 <p>补充说一下，PEB结构体中偏移0x90处，存储了Heap的地址。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">0:000&gt; dt _PEB @$peb</div><div class="line">ntdll!_PEB</div><div class="line">   +0x018 ProcessHeap      : 0x00140000 Void  ;进程的默认堆</div><div class="line">   +0x068 NtGlobalFlag     : 0x70  ;这个标志位记录了当前堆调试模式,0为普通调试模式</div><div class="line">   +0x078 HeapSegmentReserve : 0x100000  ;进程在新建堆的时候默认申请的虚拟内存大小</div><div class="line">   +0x07c HeapSegmentCommit : 0x2000  ;进程在每次申请提交的虚拟内存大小，在提交的内存用完后，进程会又再一次提交HeapSegmentCommit中指定的内存大小</div><div class="line">   +0x080 HeapDeCommitTotalFreeThreshold : 0x10000  ;当释放的内存大小大于这个阀值，就进行内存解除提交操作</div><div class="line">   +0x084 HeapDeCommitFreeBlockThreshold : 0x1000  ;当一次性释放的块大小超过这个阀值，就进行内存解除提交操作</div><div class="line">   +0x088 NumberOfHeaps    : 5  ;当前进程的堆数目,这个数目对应着!heap命令的堆显示个数</div><div class="line">   +0x08c MaximumNumberOfHeaps : 0x10  ;进程所能运行的最大堆数目</div><div class="line">   +0x090 ProcessHeaps     : 0x7c99cfc0  -&gt; 0x00140000 Void  ;存储堆句柄的数组,这里我们可以得到进程的所有堆句柄</div><div class="line"></div><div class="line">0:000&gt; dd 0x7c99cfc0</div><div class="line">7c99cfc0  00140000 00240000 00250000 00380000</div><div class="line">7c99cfd0  00430000 00000000 00000000 00000000</div><div class="line">7c99cfe0  00000000 00000000 00000000 00000000</div><div class="line">7c99cff0  00000000 00000000 00000000 00000000</div><div class="line">7c99d000  02060204 00020498 00000001 7c9b3000</div></pre></td></tr></table></figure></p>
 <h2 id="0x02堆喷射原理"><a href="#0x02堆喷射原理" class="headerlink" title="0x02堆喷射原理"></a>0x02堆喷射原理</h2><p>参考资料:<br><a href="http://blog.csdn.net/magictong/article/details/7391397" target="_blank" rel="external">Heapy Spray原理浅析</a><br><a href="http://www.exploit-monday.com/2011/08/targeted-heap-spraying-0x0c0c0c0c-is.html" target="_blank" rel="external">Targeted Heap Spraying – 0x0c0c0c0c is a Thing of the Past</a><br>Exploit 编写系列教程第十一篇：堆喷射技术揭秘（上）</p>
 <h3 id="应用程序内存模型"><a href="#应用程序内存模型" class="headerlink" title="应用程序内存模型"></a>应用程序内存模型</h3><p>要理解堆喷的原理，首先需要弄清楚一个应用程序在系统里面运行之后，它的虚拟内存结构是什么样的。从windows95开始，windows操作系统就开始构建在平坦内存模型上面，该模型在32位系统上总共提供了4GB的可寻址空间。一般来讲，顶层的一半（0x80000000-0xFFFFFFFF）被保留用做内核空间（NT系统），这种划分是可以修改的。而低地址的0x00000000-0x7FFFFFFF里面，前64K与后64K都是不可以使用的（前64K估计是为了兼容DOS程序或者设置NULL指针而保留，严禁进程访问，后64K用于隔离进程的用户和内核空间），因此进程可用的区域就为0x00010000-0x7FFEFFFF。为了进一步简化程序员的编程工作，Windows操作系统通过虚拟寻址来管理内存。从本质上来说，虚拟内存模型为每个运行中的进程提供了它自己的4GB虚拟地址空间。这项工作是通过一个从虚拟地址到物理地址的转换来完成的，并且是在一个内存管理单元（Memory Management Unit，MMU）的帮助下完成的。<br><img src="/img/learning notes of Heap Spray/0x02-1.png" alt="Heap Spray"></p>
